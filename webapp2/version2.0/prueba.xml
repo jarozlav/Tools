@@ -1,0 +1,6 @@
+<project name='prueba'>
+    <input>hola</input>
+    <view>hello</view>
+    <controller>mundo</controller>
+    <view>halo</view>
+</project>

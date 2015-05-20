@@ -4,8 +4,11 @@
 import argparse
 import os
 from Tools import *
+from xml.dom.minidom import parse
+import xml.dom.minidom
 
-def getYaml(project, controllers=None):
+
+def getYaml(project, controller):
     Yaml = "application: "+project+"\n"
     Yaml += "version: 1\n"
     Yaml += "runtime: python27\n"
@@ -13,8 +16,8 @@ def getYaml(project, controllers=None):
     Yaml += "threadsafe: true\n"
     Yaml += "\n"
     Yaml += "handlers:\n"
-    if NotNone(controllers):
-        Yaml += getYamlControllers(controllers)
+    if NotNone(controller):
+        Yaml += getYamlController(controller)
     Yaml += "- url: .*\n"
     Yaml += "  script: main.application\n"
     Yaml += "\n"
@@ -111,14 +114,14 @@ def getView():
     View += "</html>\n"
     return View
 
-def CreateProject(path, name):
+def CreateProject(path, name, imprime=True):
     pathProject = path + name
-    print "path: "+ pathProject
     if not ExistDir(pathProject):
         os.mkdir(pathProject)
         print "The project "+name+" has been created"
     else:
-        print "Updating the project "+name+"..."
+        if imprime:
+            print "Updating the project "+name+"..."
     pathProject += "/"
     return pathProject
 
@@ -136,6 +139,8 @@ def CreateView(project, _view):
         dataView = getView()
         SaveFile(view, dataView)
         print "The file "+_view+".html has been created"
+        return True
+    return False
 
 def CreateController(project, _controller):
     controller = project + _controller + '.py'
@@ -146,49 +151,108 @@ def CreateController(project, _controller):
         return True
     return False
 
-def CreateNewYaml(yaml, name, controllers):
-    dataYaml = getYaml(name, controllers)
+def CreateNewYaml(yaml, name, controller):
+    dataYaml = getYaml(name, controller)
     SaveFile(yaml, dataYaml)
     print "The file app.yaml has been created"
     
-def UpdateYaml(yaml, _controller):
+def UpdateYaml(yaml, _controller, imprime=True):
     dataYaml = OpenFileInList(yaml)
     index = WhereDataList(dataYaml, '- url: .*')
     dataYaml = UpdateDataList(dataYaml, getYamlController(_controller)[:-1], index)
     dataYaml = ListToString(dataYaml)
     SaveFile(yaml, dataYaml)
     print "The file app.yaml has been updated"
+    
+def CreateProjectComplete(path, name, _input='', _view='', _controller='', imprime=True):
+    anynew = []
+    project = CreateProject(path, name, imprime)
+    
+    CreateMain(project)
+    
+    if NotEmpty(_input):
+        anynew.append(CreateController(project, _input))
+        anynew.append(CreateView(project, _input))
+    
+    if NotEmpty(_view):
+        anynew.append(CreateView(project, _view))
+
+    newController = False
+    if NotEmpty(_controller):
+        newController = CreateController(project, _controller)
+        anynew.append(newController)
+    
+    anynew = [new for new in anynew if new is True]
+        
+    yaml = project + "app.yaml"
+    if not ExistFile(yaml):
+        CreateNewYaml(yaml, name, _input)
+    if NotEmpty(_controller):
+        if newController:
+            UpdateYaml(yaml, _controller, imprime)
+    if not NotEmptyList(anynew):
+        return "The project "+name+" already on day"
+    return ""
+
+def CreateProjectCompleteNotFile(path, name, _input='', _view='', _controller='', imprime=True):
+    message = CreateProjectComplete(path, name, _input, _view, _controller)
+    if NotEmpty(message):
+        print message
+            
+def CreateProjectCompleteFromFile(path, name, inputs=None, views=None, controllers=None):
+    print "path: "+ path + name
+    message = []
+    if NotEmptyList(inputs) or NotNone(inputs):
+        for _input in inputs:
+            message.append(CreateProjectComplete(path, name, _input=_input.childNodes[0].data))
+
+    if NotEmptyList(views) or NotNone(views):
+        for _view in views:
+            message.append(CreateProjectComplete(path, name, _view=_view.childNodes[0].data, imprime=False))
+    
+    if NotEmptyList(controllers) or NotNone(controllers):
+        for _controller in controllers:
+            message.append(CreateProjectComplete(path, name, _controller=_controller.childNodes[0].data, imprime=False))
+
+    if NotEmptyList(message):
+        message = set(message)
+        message = [messa for messa in message if NotEmpty(messa)]
+        if NotEmptyList(message):
+            if NotEmpty(message[0]):
+                print message[0]
 
 '''
         Tool Framework webapp2 
-        Version:    1.1
+        Version:    2,.0
         Autor:      Jarov
-        Fecha:      13-05-2015
+        Fecha:      15-05-2015
 
 Esta herrmaienta pretende ofrecer una forma flexible
 y rapida de generar plantillas para webapp2, utilizando MVC
-Model, View, Control
+Model, View, Control, a traves de un archivo xml con la
+estructura del proyecto
 '''
 
-parser = argparse.ArgumentParser(description="Tool Framework webapp2 v1.1")
-parser.add_argument('-n', '--name', help="Name of project webapp2", required=True)
-parser.add_argument('-p', '--path', help="Path of output files MVC without project name")
+parser = argparse.ArgumentParser(description="Tool Framework webapp2 v2.0")
+parser.add_argument('-n', '--name', help="Project webapp2's name", required=True)
+parser.add_argument('-p', '--path', help="Project's path")
 parser.add_argument('-i', '--input', help="Input filename to create VC")
-parser.add_argument('-v', '--view', help="Filename to create view")
-parser.add_argument('-c', '--controller', help="Filename to create controller")
+parser.add_argument('-v', '--view', help="View filename")
+parser.add_argument('-c', '--controller', help="Control filename")
+parser.add_argument('-x', '--xml', help="Xml filename with project's configuration" )
 args = parser.parse_args()
 
 name        = ''
-_file       = ''
 _input      = ''
 _view       = ''
 _controller = ''
+_file       = ''
 
 #Genera el path de donde se esta ejecutando este script
 path = os.path.abspath(__file__)
 path = os.path.dirname(path) + '/'
 
-fine        = False
+notfile        = True
 
 #Obtiene el path de los args
 if args.path:
@@ -198,49 +262,46 @@ if args.path:
 if args.name:
     name = args.name
 
-if args.input:
-    _input = args.input
-    _input = OnlyName(_input)
-    fine = True
-#Obtiene el nombre para V
-if args.view:
-    _view = args.view
-    _view = OnlyName(_view)
-    fine = True
-#Obtiene el nombre para C
-if args.controller:
-    _controller = args.controller
-    _controller = OnlyName(_controller)
-    fine = True
-    
-if fine:
-    controllers = None
-    
-    project = CreateProject(path, name)
-    
-    CreateMain(project)
-    
-    if NotEmpty(_input):
-        CreateController(project, _input)
-        controllers = [_input]
-        CreateView(project, _input)
-    
-    if NotEmpty(_view):
-        CreateView(project, _view)
+#Obtiene el nombre del archivo xml
+if args.xml:
+    _file = args.xml
+    _file = HaveExtension(_file, "xml")
+    notfile = False
 
-    newController = False
-    if NotEmpty(_controller):
-        newController = CreateController(project, _controller)
-        
-    yaml = project + "app.yaml"
-    if not ExistFile(yaml):
-        CreateNewYaml(yaml, name, controllers)
-    else:
-        if NotEmpty(_controller):
-            if newController:
-                UpdateYaml(yaml, _controller)
-            else:
-                print "The controller "+_controller+" has already been created"
-            
 else:
-    print "Argument [-i], [-v] or [-c] is required"
+    #Obtiene el nombre para archivos VC
+    if args.input:
+        _input = args.input
+        _input = OnlyName(_input)
+        notfile = True
+        
+    #Obtiene el nombre para V
+    if args.view:
+        _view = args.view
+        _view = OnlyName(_view)
+        notfile = True
+        
+    #Obtiene el nombre para C
+    if args.controller:
+        _controller = args.controller
+        _controller = OnlyName(_controller)
+        notfile = True
+    
+if notfile:
+    CreateProjectCompleteNotFile(path, name, _input, _view, _controller)
+elif NotEmpty(_file):
+    projectTree = OpenXmlTree(path + _file, "project")
+    if NotNone(projectTree):
+        if projectTree.hasAttribute('name'):
+            name = projectTree.getAttribute('name')
+            newpath = projectTree.getElementsByTagName('path')
+            if NotEmptyList(newpath):
+                path = newpath
+            inputs = projectTree.getElementsByTagName('input')
+            views = projectTree.getElementsByTagName('view')
+            controllers = projectTree.getElementsByTagName('controller')
+            CreateProjectCompleteFromFile(path, name, inputs, views, controllers)
+        else:
+            print "Error parsing "+_file
+else:
+    print "Argument [-i], [-v], [-c] or [-x] is required"
