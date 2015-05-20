@@ -1,6 +1,0 @@
-<?xml version="1.0" ?>
-<project name="prueba1">
-    <input>b</input>
-    <view>a</view>
-    <controller>c</controller>
-</project>

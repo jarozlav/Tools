@@ -1,5 +1,0 @@
-project: prueba1
-#path: /sources/....
-view: a
-input: b
-controller: c
