@@ -190,7 +190,7 @@ def CreateProjectComplete(path, name, _input='', _view='', _controller='', impri
     if NotEmpty(_controller):
         if newController:
             UpdateYaml(yaml, _controller, imprime)
-    if not NotEmptyList(anynew):
+    if IsEmptyList(anynew):
         return "The project "+name+" already on day"
     return ""
 
@@ -223,9 +223,9 @@ def CreateProjectCompleteFromFile(path, name, inputs=None, views=None, controlle
 
 '''
         Tool Framework webapp2 
-        Version:    2,.0
+        Version:    2.0
         Autor:      Jarov
-        Fecha:      15-05-2015
+        Fecha:      27-05-2015
 
 Esta herrmaienta pretende ofrecer una forma flexible
 y rapida de generar plantillas para webapp2, utilizando MVC
@@ -234,12 +234,12 @@ estructura del proyecto
 '''
 
 parser = argparse.ArgumentParser(description="Tool Framework webapp2 v2.0")
-parser.add_argument('-n', '--name', help="Project webapp2's name", required=True)
-parser.add_argument('-p', '--path', help="Project's path")
-parser.add_argument('-i', '--input', help="Input filename to create VC")
-parser.add_argument('-v', '--view', help="View filename")
-parser.add_argument('-c', '--controller', help="Control filename")
-parser.add_argument('-x', '--xml', help="Xml filename with project's configuration" )
+parser.add_argument('-n', dest='name', help="Project webapp2's name")
+parser.add_argument('-p', dest='path', help="Project's path")
+parser.add_argument('-i', dest='input', help="Input filename to create VC")
+parser.add_argument('-v', dest='view', help="View filename")
+parser.add_argument('-c', dest='controller', help="Control filename")
+parser.add_argument('-x', dest='xml', help="Xml filename with project's configuration" )
 args = parser.parse_args()
 
 name        = ''
@@ -252,15 +252,12 @@ _file       = ''
 path = os.path.abspath(__file__)
 path = os.path.dirname(path) + '/'
 
-notfile        = True
+notfile         = True
+haveName        = False
+haveInput       = False
+haveView        = False
+haveController  = False
 
-#Obtiene el path de los args
-if args.path:
-    path = args.path
-
-#Obtiene el nombre del proyecto
-if args.name:
-    name = args.name
 
 #Obtiene el nombre del archivo xml
 if args.xml:
@@ -269,26 +266,41 @@ if args.xml:
     notfile = False
 
 else:
+    #Obtiene el nombre del proyecto
+    if args.name:
+        name = args.name
+        haveName = True
+        
+    #Obtiene el path de los args
+    if args.path:
+        path = args.path
+
     #Obtiene el nombre para archivos VC
     if args.input:
         _input = args.input
         _input = OnlyName(_input)
-        notfile = True
+        haveInput = True
         
     #Obtiene el nombre para V
     if args.view:
         _view = args.view
         _view = OnlyName(_view)
-        notfile = True
+        haveView = True
         
     #Obtiene el nombre para C
     if args.controller:
         _controller = args.controller
         _controller = OnlyName(_controller)
-        notfile = True
+        haveController = True
     
 if notfile:
-    CreateProjectCompleteNotFile(path, name, _input, _view, _controller)
+    if haveName:
+        if haveInput or haveView or haveController:
+            CreateProjectCompleteNotFile(path, name, _input, _view, _controller)
+        else:
+            print "Argument [-i], [-v] or [-c] is required"
+    else:
+        print "Argument [-n] (project name) is required"
 elif NotEmpty(_file):
     projectTree = OpenXmlTree(path + _file, "project")
     if NotNone(projectTree):
@@ -296,12 +308,10 @@ elif NotEmpty(_file):
             name = projectTree.getAttribute('name')
             newpath = projectTree.getElementsByTagName('path')
             if NotEmptyList(newpath):
-                path = newpath
+                path = newpath[0].childNodes[0].data
             inputs = projectTree.getElementsByTagName('input')
             views = projectTree.getElementsByTagName('view')
             controllers = projectTree.getElementsByTagName('controller')
             CreateProjectCompleteFromFile(path, name, inputs, views, controllers)
         else:
             print "Error parsing "+_file
-else:
-    print "Argument [-i], [-v], [-c] or [-x] is required"

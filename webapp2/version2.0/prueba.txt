@@ -1,0 +1,35 @@
+#Este es un archivo de ejemplo que muestra
+#la estructura basica de un projecto webapp2
+#esta formado por:
+#
+#project: nombreProjectToCreate
+#
+#   donde project es la palabra clave que indica el nombre del proyecto
+#   : (dos puntos un espacio) indican la delimitacion (separacion)
+#   nombreProjectToCreate indica el nombre del proyecto este puede serdiferente al archivo.txt
+#
+#path: pathProjectCreate
+#
+#view: viewFileName
+#
+#controller: controllerFileName
+#
+#input: inputFileName
+#
+#   donde input indica que se construiran ambos archivos (view and controller)
+#
+#Notas:
+#1.- No acepta saltos de linea en blanco
+#2.- No olvidar los delimitadores(separadores) [: ] (dos puntos un espacio)
+#3.- Puede llevar cualquier orden
+#4.- Pueden llevar tantos view, controller or inputs sean necesarios
+#    pero solo un project y un path, los demas seran ignorados
+#5.- Los comentarios deben empezar en la columna 0 con #
+#
+#Example Estructura file:
+#
+project: prueba
+#path: this is a comment
+view: hola
+controller: mundo
+input: hello

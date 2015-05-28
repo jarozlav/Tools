@@ -6,20 +6,9 @@ import os
 from Tools import *
 from xml.etree.ElementTree import *
 
-
-'''
-        Tool create project's struct
-        Version:    1.1
-        Autor:      Jarov
-        Fecha:      27-05-2015
-Esta herramienta ayuda a crear el archivo xml para poder
-construir un projecto webapp2 con webapp2(Tool framework webapp2)
-desde un archivo en texto plano simple
-'''
-
-parser = argparse.ArgumentParser(description="Tool create a xml file within project's structure v1.1")
-parser.add_argument('-n', dest='name',help="Project's Struct filename", required=True)
-parser.add_argument('-p', dest='path', help="Project's path")
+parser = argparse.ArgumentParser(description="Tool create new project from xml file v1.1")
+parser.add_argument('-n', '--name', help="Project Struct's filename", required=True)
+parser.add_argument('-p', '--path', help="Project's path")
 args = parser.parse_args()
 
 _name   = ''
@@ -45,7 +34,7 @@ textLines   = OpenFileInList(project, sep='\n')
 #Filtra comentarios que empiecen con #
 textLines   = [text for text in textLines if not text[0].startswith('#')]
 #Separa en 2 columnas
-textLines   = SeparateInList(textLines, ': ')
+textLines   = Separate(textLines, ': ')
 
 projectName = ''
 pathProject = ''

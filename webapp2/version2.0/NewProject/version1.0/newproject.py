@@ -4,22 +4,13 @@
 import argparse
 import os
 from Tools import *
-from xml.etree.ElementTree import *
+from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
 
-
-'''
-        Tool create project's struct
-        Version:    1.1
-        Autor:      Jarov
-        Fecha:      27-05-2015
-Esta herramienta ayuda a crear el archivo xml para poder
-construir un projecto webapp2 con webapp2(Tool framework webapp2)
-desde un archivo en texto plano simple
-'''
-
-parser = argparse.ArgumentParser(description="Tool create a xml file within project's structure v1.1")
-parser.add_argument('-n', dest='name',help="Project's Struct filename", required=True)
-parser.add_argument('-p', dest='path', help="Project's path")
+parser = argparse.ArgumentParser(description="Tool create new project from xml file v1.0")
+parser.add_argument('-n', '--name', help="Project Struct's filename", required=True)
+parser.add_argument('-p', '--path', help="Project's path")
 args = parser.parse_args()
 
 _name   = ''
@@ -41,11 +32,11 @@ if args.name:
 #obtiene la ruta absoulta del archivo
 project     = _path + _name
 #Lee del archivo name
-textLines   = OpenFileInList(project, sep='\n')
+textLines   = OpenFileInList(project, sep=': ')
 #Filtra comentarios que empiecen con #
 textLines   = [text for text in textLines if not text[0].startswith('#')]
-#Separa en 2 columnas
-textLines   = SeparateInList(textLines, ': ')
+#Elimina los saltos de linea '\n' de los valores
+textLines   = [[text[0],text[1].rstrip('\n')] for text in textLines]
 
 projectName = ''
 pathProject = ''
@@ -58,11 +49,11 @@ if Columns(textLines, 2):
     #Recorre la lista de lineas validas que se pasaron
     for textLine in textLines:
         #Lee el nombre del proyecto a crear
-        if textLine[0] == 'project' and IsEmpty(projectName):
+        if textLine[0] == 'project' and not NotEmpty(projectName):
             projectName = textLine[1]
             projectName = OnlyName(projectName)
         #Lee el path del proyecto a crear
-        if textLine[0] == 'path' and IsEmpty(pathProject):
+        if textLine[0] == 'path' and not NotEmpty(pathProject):
             pathProject = textLine[1]
             if not pathProject.endswith('/'):
                 pathProject += '/'
@@ -77,7 +68,6 @@ if Columns(textLines, 2):
             controllers.append(textLine[1])
     #se cre el arbol xml
     xmlProject = Element('project', name=projectName)
-    xmlProject.append(Comment("Create for Tools webapp2 project's structure file"))
     #Se agregan los nodos
     #inputs
     if NotEmptyList(inputs):
@@ -96,7 +86,7 @@ if Columns(textLines, 2):
             controllerChild.text = _controller
     #Se genera el archivo de salida
     if NotNone(xmlProject):
-        if IsEmpty(pathProject):
+        if not NotEmpty(pathProject):
             pathProject = _path
         output = pathProject + projectName +".xml"
         if (ExistFile(output)):

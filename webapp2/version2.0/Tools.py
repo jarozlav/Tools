@@ -57,19 +57,38 @@ def ExistDir(_dir):
     return path.exists(_dir)
 
 def NotEmpytAndNone(text):
-    return NotEmpty(text) and NotNone(text)
+    #return NotEmpty(text) and NotNone(text)
+    return not IsEmptyAndIsNone(text)
+
+def IsEmptyAndIsNone(text):
+    return IsEmpty(text) and IsNone(text)
 
 def NotEmpytOrNone(text):
-    return NotEmpty(text) or NotNone(text)
+    #return NotEmpty(text) or NotNone(text)
+    return not IsEmptyOrIsNone(text)
+
+def IsEmptyOrIsNone(text):
+    return IsEmpty(text) or IsNone(text)
     
 def NotEmpty(text):
-    return text is not ''
+    #return text is not ''
+    return not IsEmpty(text)
+
+def IsEmpty(text):
+    return text is ''
 
 def NotEmptyList(_list):
-    return len(_list) != 0
+    #return len(_list) != 0
+    return not IsEmptyList(_list)
+
+def IsEmptyList(_list):
+    return len(_list) == 0
 
 def NotNone(text):
-    return text is not None
+    return not IsNone(text)
+
+def IsNone(text):
+    return text is None
 
 def OnlyName(_file):
     if IsNameFile(_file):
@@ -110,3 +129,6 @@ def Columns(_list, columns):
             valid = False
             break
     return valid
+
+def SeparateInList(_list, separator):
+    return [element[0].split(separator) for element in _list ]
