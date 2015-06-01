@@ -54,7 +54,7 @@ views       = []
 controllers = []
 
 #Valida si existe el formato llave-valor
-if Columns(textLines, 2):
+if HaveColumns(textLines, 2):
     #Recorre la lista de lineas validas que se pasaron
     for textLine in textLines:
         #Lee el nombre del proyecto a crear

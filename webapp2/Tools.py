@@ -122,7 +122,7 @@ def ListToString(_list):
         string += str(listIn[0]) + '\n'
     return string
 
-def Columns(_list, columns):
+def HaveColumns(_list, columns):
     valid = True
     for _listIn in _list:
         if len(_listIn) != columns:
