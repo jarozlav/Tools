@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<project name="prueba">
+    <!--Create for Tools webapp2 project's structure file-->
+    <input>hello</input>
+    <view>hola</view>
+    <controller>mundo</controller>
+</project>
