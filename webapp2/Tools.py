@@ -34,7 +34,7 @@ def HaveExtension(_file, extension):
             return __file + ".xml"
     
 def SaveFile(_file, data):
-    f = open(_file, 'wb')
+    f = open(_file, 'w')
     f.writelines(data)
     
 def FormatXml(dataXml):
@@ -45,8 +45,9 @@ def FormatXml(dataXml):
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="    ")
 
-def Save():
-    pass
+def UpdateEndFile(_file, data):
+    f = open(_file, 'a')
+    f.writelines(data)
 
 def ExistFile(_file):
     import os.path as path

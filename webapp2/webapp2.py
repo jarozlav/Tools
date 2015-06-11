@@ -109,10 +109,14 @@ def getView():
     View += "  </head>\n"
     View += "  <body>\n"
     View += "    <form action='/controller' method='post'>\n"
+    View += "      Hola Mundo Webapp2\n"
     View += "    </form>\n"
     View += "  </body>\n"
     View += "</html>\n"
     return View
+
+def getModels():
+    return "from google.appengine.ext import db\n\n"
 
 def CreateProject(path, name, imprime=True):
     pathProject = path + name
@@ -132,6 +136,12 @@ def CreateMain(project):
         SaveFile(main, dataMain)
         print "The file main.py has been created"
 
+def CreateModelsFile(project):
+    models = project + "models.py"
+    if not ExistFile(models):
+        dataModels = getModels()
+        SaveFile(models, dataModels)
+        print "The file models.py has been created"
 
 def CreateView(project, _view):
     view = project + _view+'.html'
@@ -156,14 +166,76 @@ def CreateNewYaml(yaml, name, controller):
     SaveFile(yaml, dataYaml)
     print "The file app.yaml has been created"
     
-def UpdateYaml(yaml, _controller, imprime=True):
+def UpdateYaml(yaml, _controller):
     dataYaml = OpenFileInList(yaml)
     index = WhereDataList(dataYaml, '- url: .*')
     dataYaml = UpdateDataList(dataYaml, getYamlController(_controller)[:-1], index)
     dataYaml = ListToString(dataYaml)
     SaveFile(yaml, dataYaml)
-    print "The file app.yaml has been updated"
+    #print "The file app.yaml has been updated"
     
+def UpdateModels(models, entity):
+    codeEntity = ''
+    if entity.hasAttribute('name'):
+        codeEntity = ToClassModel(entity.getAttribute('name'))
+    attributes = entity.getElementsByTagName('atribute')
+    for attribute in attributes:
+        typeData = ''
+        if attribute.hasAttribute('type'):
+            typeData = attribute.getAttribute('type')
+        else:
+            typeData = 'string'
+        nameAttribute = attribute.childNodes[0].data
+        codeEntity += CodeAttribute(nameAttribute, typeData)
+    codeEntity += '\n'
+    UpdateEndFile(models, codeEntity)
+    
+def ToClassModel(name):
+    return 'class ' + name + '(db.Model):\n'
+
+def CodeAttribute(nameAttribute, typeData):
+    if typeData == 'string':
+        typeData = 'db.StringProperty()'
+    elif typeData == 'int':
+        typeData = 'db.IntegerProperty()'
+    return '  '+nameAttribute + ' = ' + typeData + "\n"
+    
+def OpenXmlProject(path, _file, projectTree, imprime=True):
+    if projectTree.hasAttribute('name'):
+        name = projectTree.getAttribute('name')
+        newpath = projectTree.getElementsByTagName('path')
+        if NotEmptyList(newpath):
+            path = newpath[0].childNodes[0].data
+        inputs = projectTree.getElementsByTagName('input')
+        views = projectTree.getElementsByTagName('view')
+        controllers = projectTree.getElementsByTagName('controller')
+        CreateProjectCompleteFromFile(path, name, inputs, views, controllers, imprime)
+    else:
+        print "Error parsing "+_file
+        
+def OpenXmlModel(path, _model, modelTree, imprime=True):
+    if modelTree.hasAttribute('name'):
+        name = modelTree.getAttribute('name')
+        newpath = modelTree.getElementsByTagName('path')
+        if NotEmptyList(newpath):
+            path = newpath[0].childNodes[0].data
+        entitys = modelTree.getElementsByTagName('entity')
+        CreateModelCompleteFromFile(path, name, entitys, imprime)
+    else:
+        print "Error parsing "+_model
+        
+def CreateModelCompleteFromFile(path, name, entitys = None, imprime=True):
+    if NotNone(entitys):
+        project = CreateProject(path, name, imprime)
+        
+        CreateModelsFile(project)
+        
+        for entity in entitys:
+            UpdateModels(project+'models.py', entity)
+            
+    else:
+        print "Not found entitys for the project"
+        
 def CreateProjectCompleteNotFile(path, name, _input='', _view='', _controller='', imprime=True):
     anynew = []
     
@@ -193,7 +265,7 @@ def CreateProjectCompleteNotFile(path, name, _input='', _view='', _controller=''
         print "The project "+name+" already on day"
     
 
-def CreateProjectCompleteFromFile(path, name, inputs=None, views=None, controllers=None):
+def CreateProjectCompleteFromFile(path, name, inputs=None, views=None, controllers=None, imprime=True):
     project = CreateProject(path, name, imprime)
     
     CreateMain(project)
@@ -240,6 +312,7 @@ parser.add_argument('-p', dest='path', help="Project's path")
 parser.add_argument('-i', dest='input', help="Input filename to create VC")
 parser.add_argument('-v', dest='view', help="View filename")
 parser.add_argument('-c', dest='controller', help="Control filename")
+parser.add_argument('-m', dest='model', help="Xml file with database's configuration")
 parser.add_argument('-x', dest='xml', help="Xml filename with project's configuration" )
 args = parser.parse_args()
 
@@ -248,6 +321,7 @@ _input      = ''
 _view       = ''
 _controller = ''
 _file       = ''
+_model      = ''
 
 #Genera el path de donde se esta ejecutando este script
 path = os.path.abspath(__file__)
@@ -260,12 +334,16 @@ haveView        = False
 haveController  = False
 
 
-#Obtiene el nombre del archivo xml
+#Obtiene el nombre del archivo xml para el project
 if args.xml:
     _file = args.xml
     _file = HaveExtension(_file, "xml")
     notfile = False
-
+#Obtiene el nombre del archivo xml para models
+elif args.model:
+    _model = args.model
+    _model = HaveExtension(_model, "xml")
+    notfile = False
 else:
     #Obtiene el nombre del proyecto
     if args.name:
@@ -305,14 +383,12 @@ if notfile:
 elif NotEmpty(_file):
     projectTree = OpenXmlTree(path + _file, "project")
     if NotNone(projectTree):
-        if projectTree.hasAttribute('name'):
-            name = projectTree.getAttribute('name')
-            newpath = projectTree.getElementsByTagName('path')
-            if NotEmptyList(newpath):
-                path = newpath[0].childNodes[0].data
-            inputs = projectTree.getElementsByTagName('input')
-            views = projectTree.getElementsByTagName('view')
-            controllers = projectTree.getElementsByTagName('controller')
-            CreateProjectCompleteFromFile(path, name, inputs, views, controllers)
-        else:
-            print "Error parsing "+_file
+        OpenXmlProject(path, _file, projectTree, True)
+    else:
+        print "Not Found File: " + path + _file
+elif NotEmpty(_model):
+    modelTree = OpenXmlTree(path + _model, "project")
+    if NotNone(modelTree):
+        OpenXmlModel(path, _model, modelTree)
+    else:
+        print "Not Found File: " + path + _model

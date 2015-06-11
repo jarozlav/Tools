@@ -1,0 +1,9 @@
+<project name='prueba'>
+    <entity name='persona'>
+        <atribute type='string' >nombre</atribute>
+        <atribute type='string' >ap_paterno</atribute>
+    </entity>
+    <entity name='telefono'>
+        <atribute type='int' >num_telefono</atribute>
+    </entity>
+</project>
